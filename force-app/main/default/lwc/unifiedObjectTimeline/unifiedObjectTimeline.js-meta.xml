@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>58.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Unified Object Timeline</masterLabel>
+    <description>Combines up to eight Flow record collections into one configurable, searchable table or timeline. Configure source collections and field mappings in Flow.</description>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen" configurationEditor="c-unifiedObjectTimelineEditor">
+            <propertyType name="S1" extends="SObject" label="Source 1 record type" />
+            <propertyType name="S2" extends="SObject" label="Source 2 record type" />
+            <propertyType name="S3" extends="SObject" label="Source 3 record type" />
+            <propertyType name="S4" extends="SObject" label="Source 4 record type" />
+            <propertyType name="S5" extends="SObject" label="Source 5 record type" />
+            <propertyType name="S6" extends="SObject" label="Source 6 record type" />
+            <propertyType name="S7" extends="SObject" label="Source 7 record type" />
+            <propertyType name="S8" extends="SObject" label="Source 8 record type" />
+            <property name="headerLabel" type="String" label="Label (optional)" role="inputOnly" />
+            <property name="displayMode" type="String" label="Display mode" role="inputOnly" />
+            <property name="pageSize" type="Integer" label="Records per page" role="inputOnly" />
+            <property name="columnConfiguration" type="String" label="Column/header configuration JSON" role="inputOnly" />
+            <property name="sourceFieldConfiguration" type="String" label="Source field mapping JSON" role="inputOnly" />
+            <property name="source1" type="{S1[]}" label="Source 1 records" role="inputOnly" />
+            <property name="source2" type="{S2[]}" label="Source 2 records" role="inputOnly" />
+            <property name="source3" type="{S3[]}" label="Source 3 records" role="inputOnly" />
+            <property name="source4" type="{S4[]}" label="Source 4 records" role="inputOnly" />
+            <property name="source5" type="{S5[]}" label="Source 5 records" role="inputOnly" />
+            <property name="source6" type="{S6[]}" label="Source 6 records" role="inputOnly" />
+            <property name="source7" type="{S7[]}" label="Source 7 records" role="inputOnly" />
+            <property name="source8" type="{S8[]}" label="Source 8 records" role="inputOnly" />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

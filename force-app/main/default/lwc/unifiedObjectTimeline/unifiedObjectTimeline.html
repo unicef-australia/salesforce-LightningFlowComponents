@@ -1,0 +1,166 @@
+<template>
+    <lightning-card>
+        <template if:true={hasCardTitle}>
+            <span slot="title" class="timeline-card-title">{cardTitle}</span>
+        </template>
+        <div class={viewClass}>
+            <div class="slds-p-horizontal_small slds-p-bottom_small">
+            <div class="toolbar slds-grid slds-wrap slds-gutters_small slds-m-bottom_small">
+                <div class="search slds-col slds-size_1-of-1 slds-large-size_4-of-12">
+                    <lightning-input
+                        type="search"
+                        label="Search records"
+                        placeholder="Search records"
+                        value={searchTerm}
+                        onchange={handleSearch}
+                    ></lightning-input>
+                </div>
+                <div class="source-filter slds-col slds-size_1-of-1 slds-large-size_3-of-12">
+                    <lightning-combobox
+                        label="Filter by source"
+                        value={sourceFilter}
+                        options={sourceOptions}
+                        onchange={handleSourceFilter}
+                    ></lightning-combobox>
+                </div>
+                <div class="date-filter from-date-filter slds-col slds-size_1-of-2 slds-large-size_2-of-12">
+                    <lightning-input
+                        name="fromDate"
+                        type="date"
+                        label="From date"
+                        value={fromDate}
+                        onchange={handleDateFilter}
+                    ></lightning-input>
+                </div>
+                <div class="date-filter to-date-filter slds-col slds-size_1-of-2 slds-large-size_2-of-12">
+                    <lightning-input
+                        name="toDate"
+                        type="date"
+                        label="To date"
+                        value={toDate}
+                        onchange={handleDateFilter}
+                    ></lightning-input>
+                </div>
+                <div class="clear-filter slds-col slds-size_1-of-1 slds-large-size_1-of-12 slds-grid slds-grid_align-end slds-grid_vertical-align-end">
+                    <lightning-button
+                        label="Clear"
+                        title="Clear filters"
+                        onclick={handleClearFilters}
+                        disabled={isClearDisabled}
+                    ></lightning-button>
+                </div>
+            </div>
+
+            <template if:true={dateRangeError}>
+                <div class="slds-text-color_error slds-m-bottom_x-small" role="alert">{dateRangeError}</div>
+            </template>
+
+            <div class="summary slds-text-body_small slds-m-bottom_x-small">
+                {resultSummary}
+            </div>
+
+            <template if:true={hasRows}>
+                <div class="table-view">
+                    <lightning-datatable
+                        key-field="rowKey"
+                        data={pageRows}
+                        columns={columns}
+                        hide-checkbox-column
+                        sorted-by={sortedBy}
+                        sorted-direction={sortDirection}
+                        onsort={handleSort}
+                    ></lightning-datatable>
+                </div>
+
+                <div class="compact-view" aria-label="Multi-object record timeline">
+                    <ul class="compact-list">
+                        <template for:each={compactRows} for:item="row">
+                            <li key={row.rowKey} class="compact-row">
+                                <div class="compact-row-main">
+                                    <div class="compact-row-icon" aria-hidden="true">
+                                        <lightning-icon
+                                            icon-name={row.sourceIcon}
+                                            size="medium"
+                                            alternative-text=""
+                                        ></lightning-icon>
+                                    </div>
+                                    <div class="compact-row-content">
+                                        <div class="compact-row-meta">
+                                            <span class="compact-when">{row.when}</span>
+                                            <span class="compact-source">{row.source}</span>
+                                            <template if:true={row.status}>
+                                                <span class="compact-status">{row.status}</span>
+                                            </template>
+                                            <template if:true={row.type}>
+                                                <span class="compact-type">{row.type}</span>
+                                            </template>
+                                        </div>
+                                        <div class="compact-record">
+                                            <lightning-formatted-url
+                                                value={row.recordUrl}
+                                                label={row.recordLabel}
+                                                target="_blank"
+                                            ></lightning-formatted-url>
+                                        </div>
+                                        <template if:true={row.summary}>
+                                            <div class="compact-summary">{row.summary}</div>
+                                        </template>
+                                        <template if:true={row.expanded}>
+                                            <div class="compact-details">
+                                                <template if:true={row.detailsIsRichText}>
+                                                    <lightning-formatted-rich-text
+                                                        value={row.detailsRichText}
+                                                    ></lightning-formatted-rich-text>
+                                                </template>
+                                                <template if:false={row.detailsIsRichText}>
+                                                    <lightning-formatted-text value={row.details}></lightning-formatted-text>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <template if:true={row.hasDetails}>
+                                        <lightning-button-icon
+                                            class="compact-toggle"
+                                            icon-name={row.toggleIcon}
+                                            alternative-text={row.toggleLabel}
+                                            title={row.toggleLabel}
+                                            data-row-key={row.rowKey}
+                                            onclick={handleCompactRowToggle}
+                                        ></lightning-button-icon>
+                                    </template>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+
+                <div class="pagination slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-top_small">
+                    <lightning-button
+                        label="Previous"
+                        title="Previous page"
+                        icon-name="utility:chevronleft"
+                        onclick={handlePrevious}
+                        disabled={isFirstPage}
+                    ></lightning-button>
+                    <span class="slds-text-body_small">{pageSummary}</span>
+                    <lightning-button
+                        label="Next"
+                        title="Next page"
+                        icon-name="utility:chevronright"
+                        icon-position="right"
+                        onclick={handleNext}
+                        disabled={isLastPage}
+                    ></lightning-button>
+                </div>
+            </template>
+
+            <template if:true={hasNoRows}>
+                <div class="empty-state slds-text-align_center slds-p-vertical_large">
+                    <lightning-icon icon-name="utility:search" size="small" alternative-text="No results"></lightning-icon>
+                    <p class="slds-m-top_small">No records match the current filters.</p>
+                </div>
+            </template>
+            </div>
+        </div>
+    </lightning-card>
+</template>

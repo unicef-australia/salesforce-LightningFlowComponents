@@ -1,0 +1,10 @@
+{
+    "namespace": "",
+    "packageDirectories": [
+        {
+            "path": "force-app",
+            "default": true
+        }
+    ],
+    "sourceApiVersion": "58.0"
+}

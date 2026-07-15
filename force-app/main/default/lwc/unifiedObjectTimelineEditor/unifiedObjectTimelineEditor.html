@@ -1,0 +1,330 @@
+<template>
+    <div class="slds-p-around_small editor-shell">
+        <div class="intro slds-m-bottom_small">
+            <p class="slds-text-body_small">
+                Define the visible columns first, then map each Flow record collection into them.
+            </p>
+            <p class="slds-text-body_small status-text slds-m-top_x-small">{configStatus}</p>
+        </div>
+
+        <template if:true={isConfigWarning}>
+            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_warning slds-m-bottom_small" role="status">
+                <span class="slds-assistive-text">Warning</span>
+                <h2>{configWarning} Safe visual defaults are loaded.</h2>
+                <lightning-button
+                    class="slds-m-left_small"
+                    label="Reset configuration"
+                    variant="neutral"
+                    onclick={handleResetConfiguration}
+                ></lightning-button>
+            </div>
+        </template>
+
+        <section class="editor-section slds-m-bottom_medium">
+            <div class="section-heading">
+                <div>
+                    <h2 class="slds-text-heading_small">Component label</h2>
+                    <p class="slds-text-body_small">Optional. Leave blank to hide the component title, or enter a static label or Flow reference.</p>
+                </div>
+            </div>
+            <lightning-input
+                label="Label (optional)"
+                value={headerLabel}
+                placeholder="For example, Contact Name"
+                field-level-help="Use a text value or a Flow reference to a Flow resource."
+                onchange={handleHeaderLabelChange}
+            ></lightning-input>
+        </section>
+
+        <section class="editor-section slds-m-bottom_medium">
+            <div class="section-heading">
+                <div>
+                    <h2 class="slds-text-heading_small">Display mode</h2>
+                    <p class="slds-text-body_small">Choose how records are displayed. Auto switches to the timeline when the component is narrow.</p>
+                </div>
+                <div class="display-controls">
+                    <lightning-combobox
+                        class="display-mode-select"
+                        label="Display mode"
+                        variant="label-hidden"
+                        value={displayMode}
+                        options={displayModeOptions}
+                        onchange={handleDisplayModeChange}
+                    ></lightning-combobox>
+                    <lightning-combobox
+                        class="page-size-select"
+                        label="Records per page"
+                        value={pageSize}
+                        options={pageSizeOptions}
+                        onchange={handlePageSizeChange}
+                    ></lightning-combobox>
+                </div>
+            </div>
+        </section>
+
+        <section class="editor-section slds-m-bottom_medium">
+            <div class="section-heading">
+                <div>
+                    <h2 class="slds-text-heading_small">1. Define columns</h2>
+                    <p class="slds-text-body_small">These become the visible headers, in this order.</p>
+                </div>
+                <lightning-button label="Add column" icon-name="utility:add" onclick={handleAddColumn}></lightning-button>
+            </div>
+
+            <template for:each={columns} for:item="column">
+                <div key={column.key} class="column-card slds-box slds-m-top_small">
+                    <div class="column-grid">
+                        <lightning-input
+                            label="Header label"
+                            value={column.label}
+                            data-key={column.key}
+                            data-field="label"
+                            onblur={handleColumnChange}
+                        ></lightning-input>
+                        <lightning-input
+                            label="Key"
+                            value={column.key}
+                            data-key={column.key}
+                            data-field="key"
+                            field-level-help="A unique internal name, for example summary or status."
+                            onblur={handleColumnChange}
+                        ></lightning-input>
+                        <lightning-combobox
+                            label="Display type"
+                            value={column.type}
+                            options={columnTypeOptions}
+                            data-key={column.key}
+                            data-field="type"
+                            onchange={handleColumnChange}
+                        ></lightning-combobox>
+                    </div>
+                    <div class="column-options slds-m-top_x-small">
+                        <lightning-input
+                            type="checkbox"
+                            label="Sortable"
+                            checked={column.sortable}
+                            data-key={column.key}
+                            data-field="sortable"
+                            onchange={handleColumnChange}
+                        ></lightning-input>
+                        <lightning-input
+                            type="checkbox"
+                            label="Wrap text"
+                            checked={column.wrapText}
+                            data-key={column.key}
+                            data-field="wrapText"
+                            onchange={handleColumnChange}
+                        ></lightning-input>
+                        <lightning-input
+                            type="checkbox"
+                            label="Allow multiple fields"
+                            checked={column.allowMultipleFields}
+                            data-key={column.key}
+                            data-field="allowMultipleFields"
+                            field-level-help="Use this for composite columns such as Summary or Details."
+                            onchange={handleColumnChange}
+                        ></lightning-input>
+                        <lightning-button-icon
+                            icon-name="utility:up"
+                            alternative-text="Move column up"
+                            title="Move column up"
+                            data-key={column.key}
+                            data-direction="up"
+                            onclick={handleMoveColumn}
+                        ></lightning-button-icon>
+                        <lightning-button-icon
+                            icon-name="utility:down"
+                            alternative-text="Move column down"
+                            title="Move column down"
+                            data-key={column.key}
+                            data-direction="down"
+                            onclick={handleMoveColumn}
+                        ></lightning-button-icon>
+                        <lightning-button-icon
+                            icon-name="utility:delete"
+                            alternative-text="Remove column"
+                            title="Remove column"
+                            data-key={column.key}
+                            onclick={handleDeleteColumn}
+                        ></lightning-button-icon>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <section class="editor-section">
+            <div class="section-heading">
+                <div>
+                    <h2 class="slds-text-heading_small">2. Map source fields</h2>
+                    <p class="slds-text-body_small">Choose which fields populate each column for each source.</p>
+                </div>
+            </div>
+
+            <lightning-accordion allow-multiple-sections-open>
+                <template for:each={sourceEditors} for:item="source">
+                    <lightning-accordion-section key={source.slot} name={source.slot} label={source.accordionLabel}>
+                        <p class="slds-text-body_small source-help slds-m-bottom_small">{source.sourceHelp}</p>
+
+                        <lightning-combobox
+                            data-slot={source.slot}
+                            data-type-name={source.typeName}
+                            label="Object type"
+                            value={source.objectType}
+                            options={source.objectOptions}
+                            onchange={handleObjectTypeChange}
+                        ></lightning-combobox>
+                        <lightning-combobox
+                            class="slds-m-top_x-small"
+                            data-slot={source.slot}
+                            label="Record collection"
+                            value={source.collectionValue}
+                            options={source.collectionOptions}
+                            onchange={handleCollectionChange}
+                        ></lightning-combobox>
+
+                        <template if:true={source.objectType}>
+                            <lightning-input
+                                class="slds-m-top_x-small"
+                                data-slot={source.slot}
+                                data-field="source"
+                                label="Source label"
+                                value={source.source}
+                                field-level-help="The label shown in the Source column."
+                                onblur={handleSourceTextChange}
+                            ></lightning-input>
+                            <div class="date-grid slds-m-top_x-small">
+                                <lightning-combobox
+                                    data-slot={source.slot}
+                                    data-field="dateField"
+                                    label="Sort date field"
+                                    value={source.dateField}
+                                    options={source.dateFieldOptions}
+                                    onchange={handleSourceSelectChange}
+                                ></lightning-combobox>
+                                <lightning-combobox
+                                    data-slot={source.slot}
+                                    data-field="dateType"
+                                    label="Date type"
+                                    value={source.dateType}
+                                    options={dateTypeOptions}
+                                    onchange={handleSourceSelectChange}
+                                ></lightning-combobox>
+                            </div>
+                            <div class="date-grid slds-m-top_x-small">
+                                <lightning-combobox
+                                    data-slot={source.slot}
+                                    data-field="fallbackDateField"
+                                    label="Fallback date field (optional)"
+                                    value={source.fallbackDateField}
+                                    options={source.fallbackDateFieldOptions}
+                                    onchange={handleSourceSelectChange}
+                                ></lightning-combobox>
+                                <lightning-combobox
+                                    data-slot={source.slot}
+                                    data-field="fallbackDateType"
+                                    label="Fallback date type"
+                                    value={source.fallbackDateType}
+                                    options={dateTypeOptions}
+                                    onchange={handleSourceSelectChange}
+                                ></lightning-combobox>
+                            </div>
+                        </template>
+
+                        <template if:true={source.showMappings}>
+                            <div class="mapping-heading slds-m-top_medium">Column field mappings</div>
+                            <template for:each={source.mappings} for:item="mapping">
+                                <div key={mapping.key} class="mapping-card slds-m-top_small">
+                                    <div class="mapping-label">{mapping.label}</div>
+                                    <template if:true={mapping.isSourceColumn}>
+                                        <div class="automatic-mapping">
+                                            <lightning-icon icon-name="utility:automate" size="x-small"></lightning-icon>
+                                            <span>Uses the source label above automatically.</span>
+                                        </div>
+                                    </template>
+                                    <template if:false={mapping.isSourceColumn}>
+                                        <template for:each={mapping.fields} for:item="field">
+                                            <div key={field.index} class="mapping-row">
+                                                <lightning-combobox
+                                                    class="mapping-field"
+                                                    data-slot={source.slot}
+                                                    data-column-key={mapping.columnKey}
+                                                    data-index={field.index}
+                                                    label="Field"
+                                                    variant="label-hidden"
+                                                    value={field.value}
+                                                    options={field.options}
+                                                    onchange={handleMappingFieldChange}
+                                                ></lightning-combobox>
+                                                <template if:true={field.showAddButton}>
+                                                    <lightning-button-icon
+                                                        class="add-field-button"
+                                                        variant="brand"
+                                                        icon-name="utility:add"
+                                                        alternative-text="Add another field"
+                                                        title="Add another field"
+                                                        data-slot={source.slot}
+                                                        data-column-key={mapping.columnKey}
+                                                        onclick={handleAddMappingField}
+                                                    ></lightning-button-icon>
+                                                </template>
+                                                <lightning-button-icon
+                                                    icon-name="utility:delete"
+                                                    alternative-text="Remove mapped field"
+                                                    title="Remove mapped field"
+                                                    data-slot={source.slot}
+                                                    data-column-key={mapping.columnKey}
+                                                    data-index={field.index}
+                                                    onclick={handleRemoveMappingField}
+                                                ></lightning-button-icon>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template if:true={mapping.showFormatting}>
+                                        <div class="formatting-panel slds-m-top_small">
+                                            <div class="formatting-title">Combined field formatting</div>
+                                            <div class="formatting-grid slds-m-top_x-small">
+                                                <lightning-combobox
+                                                    label="Separator"
+                                                    value={mapping.separator}
+                                                    options={mapping.separatorOptions}
+                                                    data-slot={source.slot}
+                                                    data-column-key={mapping.columnKey}
+                                                    data-field="separator"
+                                                    onchange={handleMappingSettingChange}
+                                                ></lightning-combobox>
+                                                <lightning-input
+                                                    class="include-labels"
+                                                    type="checkbox"
+                                                    label="Include field labels"
+                                                    checked={mapping.includeLabels}
+                                                    data-slot={source.slot}
+                                                    data-column-key={mapping.columnKey}
+                                                    data-field="includeLabels"
+                                                    onchange={handleMappingSettingChange}
+                                                ></lightning-input>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </template>
+                        <template if:false={source.showMappings}>
+                            <div class="mapping-empty-state slds-m-top_small" role="note">
+                                <lightning-icon
+                                    icon-name="utility:info"
+                                    size="x-small"
+                                    alternative-text=""
+                                ></lightning-icon>
+                                <span>Select an object type and record collection above to configure field mappings.</span>
+                            </div>
+                        </template>
+                    </lightning-accordion-section>
+                </template>
+            </lightning-accordion>
+        </section>
+
+        <div class="editor-footer slds-m-top_medium">
+            <lightning-button label="Reset configuration" variant="neutral" onclick={handleResetConfiguration}></lightning-button>
+        </div>
+    </div>
+</template>

@@ -1,0 +1,161 @@
+.editor-shell {
+    max-width: 70rem;
+}
+
+.intro,
+.section-heading,
+.editor-footer,
+.column-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.status-text {
+    color: var(--lwc-colorTextWeak, #5c5c5c);
+}
+
+.section-heading {
+    align-items: flex-start;
+}
+
+.display-mode-select {
+    min-width: 12rem;
+}
+
+.page-size-select {
+    min-width: 12rem;
+}
+
+.display-controls {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.column-grid,
+.date-grid,
+.formatting-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.column-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.formatting-grid {
+    align-items: end;
+    grid-template-columns: minmax(12rem, 1fr) max-content;
+}
+
+.column-options {
+    justify-content: flex-start;
+}
+
+.mapping-heading {
+    font-weight: 700;
+    border-bottom: 1px solid #dddbda;
+    padding-bottom: 0.25rem;
+}
+
+.mapping-card {
+    border-left: 3px solid #dddbda;
+    padding: 0.25rem 0 0.25rem 0.75rem;
+}
+
+.mapping-label {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.mapping-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.mapping-field {
+    flex: 1;
+}
+
+.automatic-mapping {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--lwc-colorTextWeak, #5c5c5c);
+    padding: 0.35rem 0;
+}
+
+.add-field-button {
+    --slds-c-icon-color-foreground-default: #ffffff;
+    --slds-c-button-brand-color-background: #0176d3;
+    --slds-c-button-brand-color-border: #0176d3;
+}
+
+.formatting-panel {
+    background: #f3f3f3;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+}
+
+.formatting-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--lwc-colorTextWeak, #5c5c5c);
+    text-transform: uppercase;
+    letter-spacing: 0.02rem;
+}
+
+.include-labels {
+    align-self: end;
+    padding-bottom: 0.4rem;
+}
+
+.source-help {
+    color: var(--lwc-colorTextWeak, #5c5c5c);
+}
+
+.mapping-empty-state {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #c9c7c5;
+    border-left: 3px solid #0176d3;
+    border-radius: 0.25rem;
+    background: #f3f8fc;
+    color: #444;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.mapping-empty-state lightning-icon {
+    --slds-c-icon-color-foreground-default: #0176d3;
+    flex: 0 0 auto;
+    margin-top: 0.05rem;
+}
+
+.editor-footer {
+    justify-content: flex-start;
+}
+
+@media (max-width: 40rem) {
+    .column-grid,
+    .date-grid,
+    .formatting-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .display-controls {
+        width: 100%;
+    }
+
+    .display-mode-select,
+    .page-size-select {
+        flex: 1 1 12rem;
+    }
+}
