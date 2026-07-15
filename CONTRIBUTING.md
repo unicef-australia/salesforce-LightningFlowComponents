@@ -18,7 +18,7 @@ Open a GitHub issue using the Bug Report template. Include:
 3. Keep the public `@api` property names and component bundle names stable — existing Flows depend on them. Treat any rename or type change as a breaking change and call it out explicitly in your PR description.
 4. Do not add organisation-specific fields, objects, or wording to a component's default configuration or documentation.
 5. Do not add a Flow, Apex class, test data, or custom object to the component bundles. If your contribution needs an example Flow, propose it as a separate, clearly labelled example — not inside the deployable component source.
-6. Add or update Jest tests for any behaviour change where practical.
+6. LWC Jest test infrastructure isn't set up in this repo yet. If you're able to add it (`sfdx-lwc-jest` config, `package.json`, `__tests__` folders) alongside your change, that's welcome — otherwise, describe how you manually verified the behaviour change in your PR.
 7. Update the component's documentation in `docs/` if you change configuration behaviour, inputs, or defaults.
 
 ## Pull requests

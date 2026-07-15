@@ -17,6 +17,7 @@ const EMPTY_SOURCE = {
 
 const DEFAULT_SOURCE_CONFIGURATION = {
     source1: {
+        enabled: true,
         source: 'Case',
         objectType: 'Case',
         dateField: 'CreatedDate',
