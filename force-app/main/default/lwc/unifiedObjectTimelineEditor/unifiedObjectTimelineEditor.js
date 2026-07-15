@@ -744,7 +744,11 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
         this.configWarning = '';
         this.headerLabel = this.eventValue(event).trim();
         if (!this.headerLabel) {
-            this.dispatchInputDeleted('headerLabel');
+            // Keep the optional input present with an empty String value.
+            // Some Flow Builder sessions do not persist deletion events for
+            // optional screen component properties and restore the old value
+            // when the editor is reopened.
+            this.dispatchInputChanged('headerLabel', '', 'String');
             return;
         }
 
