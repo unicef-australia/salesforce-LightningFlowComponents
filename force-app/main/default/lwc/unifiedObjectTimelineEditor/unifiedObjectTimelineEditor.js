@@ -49,8 +49,10 @@ const PAGE_SIZE_OPTIONS = [
 
 const SOURCE_VALUE = '@source';
 const DEFAULT_SEPARATOR = ' / ';
+const LINE_BREAK_SEPARATOR = '__LINE_BREAK__';
 const SEPARATOR_OPTIONS = [
-    { label: 'Line break', value: '\n' },
+    // Literal newline option values can make Flow Builder's property editor fail.
+    { label: 'Line break', value: LINE_BREAK_SEPARATOR },
     { label: 'Slash ( / )', value: ' / ' },
     { label: 'Vertical bar ( | )', value: ' | ' },
     { label: 'Comma ( , )', value: ', ' },
@@ -58,6 +60,17 @@ const SEPARATOR_OPTIONS = [
     { label: 'Dash ( - )', value: ' - ' },
     { label: 'Space', value: ' ' }
 ];
+
+const normalizeColumnType = (type) => {
+    const normalized = String(type || 'text')
+        .replace(/[\s_/-]+/g, '')
+        .toLowerCase();
+
+    if (normalized === 'richtext' || normalized === 'textarea' || normalized === 'html') {
+        return 'richText';
+    }
+    return type || 'text';
+};
 
 export default class UnifiedObjectTimelineEditor extends LightningElement {
     _inputVariables = [];
@@ -207,7 +220,7 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
                 mappings,
                 showMappings: Boolean(objectType && collectionValue),
                 sourceHelp: source.required
-                    ? 'Example source. The default mapping uses Case and standard fields only.'
+                    ? 'Required. Choose an object type and record collection for this source.'
                     : 'Optional. Leave the object type and collection blank until this source is needed.'
             };
         });
@@ -334,7 +347,7 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
         return source.map((column, index) => ({
             key: this.safeKey(column.key || `column${index + 1}`),
             label: column.label || column.key || `Column ${index + 1}`,
-            type: column.type === 'textArea' || column.type === 'html' ? 'richText' : column.type || 'text',
+            type: normalizeColumnType(column.type),
             sortable: column.sortable !== false,
             wrapText: column.wrapText === true,
             allowMultipleFields: column.allowMultipleFields === true
@@ -390,7 +403,7 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
             ...settings,
             fields,
             separator: Object.prototype.hasOwnProperty.call(value, 'separator')
-                ? value.separator
+                ? this.editorSeparator(value.separator)
                 : DEFAULT_SEPARATOR,
             includeLabels: value.includeLabels === true
         };
@@ -414,7 +427,7 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
         const options = this.fieldOptions(objectType, fields.map((field) => field.field));
 
         const separator = Object.prototype.hasOwnProperty.call(mapping, 'separator')
-            ? mapping.separator
+            ? this.editorSeparator(mapping.separator)
             : DEFAULT_SEPARATOR;
         return {
             key: `${source.slot}-${column.key}`,
@@ -436,12 +449,13 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
     }
 
     separatorOptions(selectedSeparator) {
-        if (SEPARATOR_OPTIONS.some((option) => option.value === selectedSeparator)) {
+        const editorValue = this.editorSeparator(selectedSeparator);
+        if (SEPARATOR_OPTIONS.some((option) => option.value === editorValue)) {
             return SEPARATOR_OPTIONS;
         }
         return [
             ...SEPARATOR_OPTIONS,
-            { label: `Current custom separator (${String(selectedSeparator)})`, value: selectedSeparator }
+            { label: `Current custom separator (${String(editorValue)})`, value: editorValue }
         ];
     }
 
@@ -720,7 +734,7 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
 
     handlePageSizeChange(event) {
         this.pageSize = this.normalizePageSize(this.eventValue(event));
-        this.persistConfiguration();
+        this.persistConfiguration(['pageSize']);
     }
 
     handleHeaderLabelChange(event) {
@@ -792,8 +806,8 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
             columns[index].key = newKey;
             this.renameSourceColumnMappings(oldKey, newKey);
         } else if (field === 'type') {
-            columns[index].type = value;
-            if (value === 'richText') {
+            columns[index].type = normalizeColumnType(value);
+            if (columns[index].type === 'richText') {
                 columns[index].wrapText = true;
                 columns[index].allowMultipleFields = true;
                 columns[index].sortable = false;
@@ -922,7 +936,8 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
         const field = event.target.dataset.field;
         const configuration = this.clone(this.sourceConfigurations[slot]);
         const mapping = configuration.columns[columnKey] || this.normalizeMapping(null);
-        mapping[field] = field === 'includeLabels' ? event.target.checked : this.eventValue(event);
+        const value = field === 'includeLabels' ? event.target.checked : this.eventValue(event);
+        mapping[field] = field === 'separator' ? this.editorSeparator(value) : value;
         configuration.columns[columnKey] = mapping;
         this.sourceConfigurations = { ...this.sourceConfigurations, [slot]: configuration };
         this.persistConfiguration();
@@ -992,6 +1007,11 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
                 const settings = { ...mapping };
                 delete settings.fields;
                 delete settings.value;
+                if (Object.prototype.hasOwnProperty.call(settings, 'separator')) {
+                    // Keep the Builder-safe token in the Flow value. The runtime
+                    // converts it to a visual line break when rendering.
+                    settings.separator = this.editorSeparator(settings.separator);
+                }
                 if (fields.length === 1 && fields[0].field === SOURCE_VALUE) {
                     entry.columns[column.key] = { value: 'source', ...settings };
                 } else if (fields.length === 1) {
@@ -1005,11 +1025,17 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
         }, {});
     }
 
-    persistConfiguration() {
+    persistConfiguration(explicitInputs = []) {
         this.configDirty = true;
         this.configWarning = '';
         this.dispatchInputChanged('displayMode', this.displayMode, 'String');
-        this.dispatchInputChanged('pageSize', Number(this.pageSize), 'Integer');
+        // Older Flow versions may not have this newer property persisted yet.
+        // Do not introduce it during unrelated edits; Flow Builder can throw
+        // while translating the screen metadata when several inputs are added
+        // together. A direct page-size edit explicitly opts into adding it.
+        if (explicitInputs.includes('pageSize') || this.hasInputVariable('pageSize')) {
+            this.dispatchInputChanged('pageSize', Number(this.pageSize), 'Integer');
+        }
         this.dispatchInputChanged('columnConfiguration', JSON.stringify(this.columns), 'String');
         this.dispatchInputChanged('sourceFieldConfiguration', JSON.stringify(this.serializeSourceConfiguration()), 'String');
     }
@@ -1041,6 +1067,10 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
             : event.target.value;
     }
 
+    hasInputVariable(name) {
+        return this._inputVariables.some((input) => input && input.name === name);
+    }
+
     nextColumnKey() {
         let index = this.columns.length + 1;
         let key = `column${index}`;
@@ -1053,6 +1083,12 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
 
     clone(value) {
         return JSON.parse(JSON.stringify(value));
+    }
+
+    editorSeparator(value) {
+        return value === '\n' || value === '\r\n' || value === '\\n'
+            ? LINE_BREAK_SEPARATOR
+            : value;
     }
 
     dispatchInputChanged(name, newValue, newValueDataType) {

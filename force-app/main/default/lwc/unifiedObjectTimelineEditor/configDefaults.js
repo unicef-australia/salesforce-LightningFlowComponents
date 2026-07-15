@@ -16,31 +16,7 @@ const EMPTY_SOURCE = {
 };
 
 const DEFAULT_SOURCE_CONFIGURATION = {
-    source1: {
-        enabled: true,
-        source: 'Case',
-        objectType: 'Case',
-        dateField: 'CreatedDate',
-        dateType: 'dateTime',
-        columns: {
-            when: { field: 'CreatedDate', type: 'dateTime' },
-            record: { field: 'CaseNumber' },
-            status: { field: 'Status' },
-            type: {
-                fields: [{ field: 'Type' }, { field: 'Reason' }],
-                separator: ' / '
-            },
-            details: {
-                fields: [
-                    { label: 'Subject', field: 'Subject' },
-                    { label: 'Description', field: 'Description' },
-                    { label: 'Closed', field: 'ClosedDate', type: 'dateTime' }
-                ],
-                separator: '\n',
-                includeLabels: true
-            }
-        }
-    },
+    source1: { ...EMPTY_SOURCE },
     source2: { ...EMPTY_SOURCE },
     source3: { ...EMPTY_SOURCE },
     source4: { ...EMPTY_SOURCE },

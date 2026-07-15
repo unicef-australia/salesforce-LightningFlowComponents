@@ -73,6 +73,7 @@ export default class UnifiedObjectTimeline extends LightningElement {
 
     rows = [];
     columns = [];
+    columnDefinitions = [];
     searchTerm = '';
     sourceFilter = ALL_SOURCES;
     fromDate = '';
@@ -267,7 +268,7 @@ export default class UnifiedObjectTimeline extends LightningElement {
     get compactRows() {
         return this.pageRows.map((row) => {
             const details = this.compactValue(row, 'details');
-            const detailsRichText = row.column_detailsRichText || '';
+            const detailsRichText = this.expandedRichTextForRow(row);
             return {
                 rowKey: row.rowKey,
                 when: this.formatDate(row.timelineDate, 'dateTime'),
@@ -389,6 +390,7 @@ export default class UnifiedObjectTimeline extends LightningElement {
 
     rebuildRows() {
         const config = this.parseConfiguration();
+        this.columnDefinitions = config.columns;
         this.columns = this.buildDatatableColumns(config.columns);
         const collections = {
             source1: this._source1,
@@ -587,8 +589,37 @@ export default class UnifiedObjectTimeline extends LightningElement {
         return value === null || value === undefined ? '' : String(value);
     }
 
+    expandedRichTextForRow(row) {
+        const richTextValues = (this.columnDefinitions || [])
+            .filter((column) => this.isRichTextType(column.type))
+            .map((column) => ({
+                label: column.label || column.key,
+                value: row[`column_${column.key}RichText`] || ''
+            }))
+            .filter((entry) => entry.value);
+
+        if (richTextValues.length === 1) {
+            return richTextValues[0].value;
+        }
+
+        return richTextValues
+            .map((entry) => `<div><strong>${this.escapeHtml(entry.label)}:</strong><div>${entry.value}</div></div>`)
+            .join('<br>');
+    }
+
     isRichTextType(type) {
-        return type === 'richText' || type === 'textArea' || type === 'html';
+        return this.normalizeColumnType(type) === 'richText';
+    }
+
+    normalizeColumnType(type) {
+        const normalized = String(type || 'text')
+            .replace(/[\s_/-]+/g, '')
+            .toLowerCase();
+
+        if (normalized === 'richtext' || normalized === 'textarea' || normalized === 'html') {
+            return 'richText';
+        }
+        return type || 'text';
     }
 
     formatRichTextColumnValue(record, definition, sourceConfig) {
@@ -644,8 +675,14 @@ export default class UnifiedObjectTimeline extends LightningElement {
     }
 
     richTextSeparator(separator) {
-        const value = separator === null || separator === undefined ? ' / ' : String(separator);
+        const value = this.configurationSeparator(
+            separator === null || separator === undefined ? ' / ' : String(separator)
+        );
         return this.escapeHtml(value).replace(/\\n|\r?\n/g, '<br>');
+    }
+
+    configurationSeparator(value) {
+        return value === '__LINE_BREAK__' ? '\n' : value;
     }
 
     looksLikeHtml(value) {
@@ -725,7 +762,7 @@ export default class UnifiedObjectTimeline extends LightningElement {
     }
 
     formatCompositeValue(record, definition) {
-        const separator = definition.separator || ' / ';
+        const separator = this.configurationSeparator(definition.separator || ' / ');
         const includeLabels = definition.includeLabels === true;
         return (definition.fields || [])
             .map((fieldDefinition) => {
@@ -839,27 +876,51 @@ export default class UnifiedObjectTimeline extends LightningElement {
         const sourceFields = this.parseJson(this._sourceFieldConfiguration);
         if (columns || sourceFields) {
             return {
-                columns: Array.isArray(columns) && columns.length ? columns : DEFAULT_TIMELINE_CONFIG.columns,
+                columns: this.normalizeColumnDefinitions(
+                    Array.isArray(columns) && columns.length ? columns : DEFAULT_TIMELINE_CONFIG.columns
+                ),
                 sources: this.normalizeSourceConfiguration(sourceFields)
             };
         }
 
         if (!this._sourceConfiguration) {
-            return DEFAULT_TIMELINE_CONFIG;
+            return {
+                ...DEFAULT_TIMELINE_CONFIG,
+                columns: this.normalizeColumnDefinitions(DEFAULT_TIMELINE_CONFIG.columns)
+            };
         }
 
         try {
             const parsed = JSON.parse(this._sourceConfiguration);
             if (Array.isArray(parsed)) {
-                return { sources: parsed, columns: DEFAULT_TIMELINE_CONFIG.columns };
+                return {
+                    sources: parsed,
+                    columns: this.normalizeColumnDefinitions(DEFAULT_TIMELINE_CONFIG.columns)
+                };
             }
             if (parsed && Array.isArray(parsed.sources) && Array.isArray(parsed.columns)) {
-                return parsed;
+                return {
+                    ...parsed,
+                    columns: this.normalizeColumnDefinitions(parsed.columns)
+                };
             }
-            return DEFAULT_TIMELINE_CONFIG;
+            return {
+                ...DEFAULT_TIMELINE_CONFIG,
+                columns: this.normalizeColumnDefinitions(DEFAULT_TIMELINE_CONFIG.columns)
+            };
         } catch (error) {
-            return DEFAULT_TIMELINE_CONFIG;
+            return {
+                ...DEFAULT_TIMELINE_CONFIG,
+                columns: this.normalizeColumnDefinitions(DEFAULT_TIMELINE_CONFIG.columns)
+            };
         }
+    }
+
+    normalizeColumnDefinitions(columns) {
+        return (columns || []).map((column) => ({
+            ...column,
+            type: this.normalizeColumnType(column.type)
+        }));
     }
 
     parseJson(value) {
