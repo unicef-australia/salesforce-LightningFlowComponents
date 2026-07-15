@@ -738,6 +738,10 @@ export default class UnifiedObjectTimelineEditor extends LightningElement {
     }
 
     handleHeaderLabelChange(event) {
+        // Prevent Flow Builder's next inputVariables refresh from restoring
+        // the previous label while this edit is being applied.
+        this.configDirty = true;
+        this.configWarning = '';
         this.headerLabel = this.eventValue(event).trim();
         if (!this.headerLabel) {
             this.dispatchInputDeleted('headerLabel');
